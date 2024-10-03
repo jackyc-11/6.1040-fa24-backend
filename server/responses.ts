@@ -1,6 +1,7 @@
 import { Authing } from "./app";
 import { AlreadyFriendsError, FriendNotFoundError, FriendRequestAlreadyExistsError, FriendRequestDoc, FriendRequestNotFoundError } from "./concepts/friending";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/posting";
+import { MessageDoc } from "./concepts/texting";
 import { Router } from "./framework/router";
 
 /**
@@ -36,6 +37,33 @@ export default class Responses {
     const to = requests.map((request) => request.to);
     const usernames = await Authing.idsToUsernames(from.concat(to));
     return requests.map((request, i) => ({ ...request, from: usernames[i], to: usernames[i + requests.length] }));
+  }
+
+  /**
+   * Convert a single MessageDoc into more readable format for the frontend 
+   * by converting sender and recipient ids into usernames.
+   */
+  static async message(message: MessageDoc | null) {
+    if (!message) {
+      return message;
+    }
+    const [sender, recipient] = await Promise.all([
+      Authing.getUserById(message.sender),
+      Authing.getUserById(message.recipient)
+    ]);
+    return {
+      ...message,
+      sender: sender.username,
+      recipient: recipient.username
+    };
+  }
+
+  /**
+   * Convert an array of MessageDoc into more readable format for the frontend 
+   * by converting sender and recipient ids into usernames.
+   */
+  static async messages(messages: MessageDoc[]) {
+    return Promise.all(messages.map((message) => this.message(message)));
   }
 }
 

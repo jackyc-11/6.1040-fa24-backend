@@ -80,6 +80,90 @@ const operations: Operation[] = [
     method: "DELETE",
     fields: { id: "input" },
   },
+  {
+    name: "Send Message",
+    endpoint: "/api/messages",
+    method: "POST",
+    fields: { recipientId: "input", content: "input" },
+  },
+  {
+    name: "Get Messages Between Users",
+    endpoint: "/api/messages/:recipientId",
+    method: "GET",
+    fields: { recipientId: "input" },
+  },
+  {
+    name: "Get Friends",
+    endpoint: "/api/friends",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "Remove Friend",
+    endpoint: "/api/friends/:friend",
+    method: "DELETE",
+    fields: { friend: "input" },
+  },
+  {
+    name: "Send Friend Request",
+    endpoint: "/api/friend/requests/:to",
+    method: "POST",
+    fields: { to: "input" },
+  },
+  {
+    name: "Get Friend Requests",
+    endpoint: "/api/friend/requests",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "Accept Friend Request",
+    endpoint: "/api/friend/accept/:from",
+    method: "PUT",
+    fields: { from: "input" },
+  },
+  {
+    name: "Reject Friend Request",
+    endpoint: "/api/friend/reject/:from",
+    method: "PUT",
+    fields: { from: "input" },
+  },
+  {
+    name: "Start Call",
+    endpoint: "/api/calls",
+    method: "POST",
+    fields: { recipientId: "input" },
+  },
+  {
+    name: "End Call",
+    endpoint: "/api/calls/:callId/end",
+    method: "PUT",
+    fields: { callId: "input" },
+  },
+  {
+    name: "Get Call Status",
+    endpoint: "/api/calls/:callId",
+    method: "GET",
+    fields: { callId: "input" },
+  },
+  {
+    name: "Get Mood",
+    endpoint: "/api/moods",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "Set Mood",
+    endpoint: "/api/moods",
+    method: "POST",
+    fields: { mood: "input" },
+  },
+  {
+    name: "Remove Mood",
+    endpoint: "/api/moods",
+    method: "DELETE",
+    fields: {},
+  },
   //
   // ...
   //

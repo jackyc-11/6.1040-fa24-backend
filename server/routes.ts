@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Authing, Friending, Posting, Sessioning } from "./app";
+import { Authing, Friending, MoodMapping, Posting, Sessioning, Texting, VideoCalling } from "./app";
 import { PostOptions } from "./concepts/posting";
 import { SessionDoc } from "./concepts/sessioning";
 import Responses from "./responses";
@@ -152,6 +152,59 @@ class Routes {
     const fromOid = (await Authing.getUserByUsername(from))._id;
     return await Friending.rejectRequest(fromOid, user);
   }
+
+  @Router.post("/moods")
+  async setMood(session: SessionDoc, mood: string) {
+    const user = Sessioning.getUser(session);
+    return await MoodMapping.setMood(user, mood);
+  }
+
+  @Router.get("/moods")
+  async getMood(session: SessionDoc) {
+    const user = Sessioning.getUser(session);
+    return await MoodMapping.getMood(user);
+  }
+
+  @Router.delete("/moods")
+  async removeMood(session: SessionDoc) {
+    const user = Sessioning.getUser(session);
+    return await MoodMapping.removeMood(user);
+  }
+  @Router.post("/calls")
+  async startCall(session: SessionDoc, recipientId: string) {
+    const caller = Sessioning.getUser(session);
+    return await VideoCalling.startCall(caller, new ObjectId(recipientId));
+  }
+
+  @Router.put("/calls/:callId/end")
+  async endCall(session: SessionDoc, callId: string) {
+    const user = Sessioning.getUser(session);
+    return await VideoCalling.endCall(new ObjectId(callId));
+  }
+
+  @Router.get("/calls/:callId")
+  async getCallStatus(session: SessionDoc, callId: string) {
+    const user = Sessioning.getUser(session);
+    return await VideoCalling.getCallStatus(new ObjectId(callId));
+  }
+
+  @Router.get("/messages/:recipientId")
+  async getMessagesBetweenUsers(session: SessionDoc, recipientId: string) {
+    const sender = Sessioning.getUser(session);
+    const messages = await Texting.getMessagesBetweenUsers(sender, new ObjectId(recipientId));
+
+    return await Responses.messages(messages);
+  }
+
+  @Router.post("/messages")
+  async sendMessage(session: SessionDoc, recipientId: string, content: string) {
+    const sender = Sessioning.getUser(session);
+    const result = await Texting.sendMessage(sender, new ObjectId(recipientId), content);
+
+    const { message } = result;
+    return await Responses.message(message);
+  }
+
 }
 
 /** The web app. */
