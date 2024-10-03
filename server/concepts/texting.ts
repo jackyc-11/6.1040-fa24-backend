@@ -26,10 +26,9 @@ export default class TextingConcept {
       throw new BadValuesError("Message content cannot be empty");
     }
 
-    // Create a new message document
     const timestamp = new Date();
     const _id = await this.messages.createOne({ sender, recipient, content, timestamp });
-    
+
     return { msg: "Message sent successfully!", message: await this.messages.readOne({ _id }) };
   }
 
@@ -44,13 +43,16 @@ export default class TextingConcept {
 
   // Retrieves all messages between two users, sorted by timestamp
   async getMessagesBetweenUsers(user1: ObjectId, user2: ObjectId) {
-    const messages = await this.messages.readMany({
-      $or: [
-        { sender: user1, recipient: user2 },
-        { sender: user2, recipient: user1 },
-      ]
-    }, { sort: { timestamp: 1 } });
-    
+    const messages = await this.messages.readMany(
+      {
+        $or: [
+          { sender: user1, recipient: user2 },
+          { sender: user2, recipient: user1 },
+        ],
+      },
+      { sort: { timestamp: 1 } },
+    );
+
     return messages;
   }
 
