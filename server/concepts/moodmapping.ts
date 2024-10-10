@@ -5,7 +5,8 @@ import { BadValuesError, NotFoundError } from "./errors";
 // Defining the Mood document interface
 export interface MoodDoc extends BaseDoc {
   user: ObjectId;
-  mood: string; // emoji string?
+  friend: ObjectId;
+  mood: string;
 }
 
 /**
@@ -19,38 +20,39 @@ export default class MoodMappingConcept {
   }
 
   // Set the user's mood
-  async setMood(user: ObjectId, mood: string) {
-    if (!mood) {
-      throw new BadValuesError("Mood cannot be empty!");
+  async setMood(user: ObjectId, friend: ObjectId, mood: string) {
+    if (!mood || !/^\p{Emoji}$/u.test(mood)) {
+      throw new BadValuesError("Mood must be a valid emoji!");
     }
 
-    // Check if the user already has a mood set
     const existingMood = await this.moods.readOne({ user });
 
     if (existingMood) {
-      // Update the mood if already exists
-      await this.moods.partialUpdateOne({ user }, { mood });
-      return { msg: "Mood updated successfully!", mood: await this.moods.readOne({ user }) };
+      await this.moods.partialUpdateOne({ user, friend }, { mood });
+      return { msg: "Mood updated successfully!", mood: await this.moods.readOne({ user, friend }) };
     } else {
-      // Otherwise, create a new mood document
-      const _id = await this.moods.createOne({ user, mood });
+      const _id = await this.moods.createOne({ user, friend, mood });
       return { msg: "Mood set successfully!", mood: await this.moods.readOne({ _id }) };
     }
   }
 
-  // Get the mood of a specific user
-  async getMood(user: ObjectId) {
-    const mood = await this.moods.readOne({ user });
-    if (!mood) {
-      throw new NotFoundError("Mood not found for this user.");
-    }
-    return mood;
+  // Fetch both user's and friend's mood
+  async getBothMoods(user: ObjectId, friend: ObjectId) {
+    const yourMoodDoc = await this.moods.readOne({ user, friend });
+    const friendMoodDoc = await this.moods.readOne({ user: friend, friend: user });
+
+    return {
+      yourMood: yourMoodDoc ? yourMoodDoc.mood : null,
+      friendMood: friendMoodDoc ? friendMoodDoc.mood : null,
+    };
   }
 
   // Remove the user's mood
-  async removeMood(user: ObjectId) {
-    const deletedMood = await this.moods.deleteOne({ user });
-    if (!deletedMood) {
+  async removeMood(user: ObjectId, friend: ObjectId) {
+    const deletedMood = await this.moods.deleteOne({ user, friend });
+    console.log("HELLO WORLD");
+    console.log("MOOD:" + deletedMood);
+    if (deletedMood.deletedCount === 0) {
       throw new NotFoundError("No mood was set for this user.");
     }
     return { msg: "Mood removed successfully!" };

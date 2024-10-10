@@ -154,57 +154,178 @@ class Routes {
   }
 
   @Router.post("/moods")
-  async setMood(session: SessionDoc, mood: string) {
+  async setMood(session: SessionDoc, mood: string, friend: string) {
     const user = Sessioning.getUser(session);
-    return await MoodMapping.setMood(user, mood);
+    const friendUser = await Authing.getUserByUsername(friend);
+
+    if (!friendUser) {
+      throw new Error(`User with username ${friend} not found.`);
+    }
+
+    const userName = (await Authing.getUserById(user)).username;
+    const friendName = friendUser.username;
+
+    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
+    return await MoodMapping.setMood(user, friendUser._id, mood);
   }
 
-  @Router.get("/moods")
-  async getMood(session: SessionDoc) {
+  @Router.get("/moods/:friend")
+  async getMood(session: SessionDoc, friend: string) {
     const user = Sessioning.getUser(session);
-    return await MoodMapping.getMood(user);
+    const friendUser = await Authing.getUserByUsername(friend);
+
+    if (!friendUser) {
+      throw new Error(`User with username ${friend} not found.`);
+    }
+
+    const userName = (await Authing.getUserById(user)).username;
+    const friendName = friendUser.username;
+
+    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
+
+    const moods = await MoodMapping.getBothMoods(user, friendUser._id);
+    return `You: ${moods.yourMood || ""}    ${friendName}: ${moods.friendMood || ""}`;
   }
 
   @Router.delete("/moods")
-  async removeMood(session: SessionDoc) {
+  async removeMood(session: SessionDoc, friend: string) {
     const user = Sessioning.getUser(session);
-    return await MoodMapping.removeMood(user);
+    const friendUser = await Authing.getUserByUsername(friend);
+
+    if (!friendUser) {
+      throw new Error(`User with username ${friend} not found.`);
+    }
+
+    const userName = (await Authing.getUserById(user)).username;
+    const friendName = friendUser.username;
+
+    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
+    return await MoodMapping.removeMood(user, friendUser._id);
   }
+
   @Router.post("/calls")
-  async startCall(session: SessionDoc, recipientId: string) {
-    const caller = Sessioning.getUser(session);
-    return await VideoCalling.startCall(caller, new ObjectId(recipientId));
+  async startCall(session: SessionDoc, recipient: string) {
+    const callerId = Sessioning.getUser(session);
+
+    const callerUser = await Authing.getUserById(callerId);
+    const recipientUser = await Authing.getUserByUsername(recipient);
+
+    if (!recipientUser) {
+      throw new Error(`Recipient with username ${recipient} not found.`);
+    }
+
+    await Friending.assertAreFriends(callerId, recipientUser._id, callerUser.username, recipientUser.username);
+
+    return await VideoCalling.startCall(callerId, recipientUser._id);
   }
 
-  @Router.put("/calls/:callId/end")
-  async endCall(session: SessionDoc, callId: string) {
+  @Router.put("/calls/end")
+  async endCall(session: SessionDoc, recipient: string) {
+    const userId = Sessioning.getUser(session);
+
+    const call = await VideoCalling.getCallStatusForUser(userId);
+
+    if (!call) {
+      throw new Error("You are not currently in any call to end.");
+    }
+
+    return await VideoCalling.endCall(call._id);
+  }
+
+  @Router.get("/calls/status")
+  async getCallStatus(session: SessionDoc) {
+    const userId = Sessioning.getUser(session);
+    const call = await VideoCalling.getCallStatusForUser(userId);
+
+    if (!call) {
+      const pendingCall = await VideoCalling.getPendingCall(userId);
+      if (pendingCall) {
+        const callerUser = await Authing.getUserById(pendingCall.caller);
+        return {
+          msg: `${callerUser.username} is calling you.`,
+          status: "pending",
+          caller: callerUser.username,
+        };
+      }
+
+      return { msg: "You are not in a call and no one is calling you." };
+    }
+
+    const isCaller = call.caller.equals(userId);
+    const otherUserId = isCaller ? call.recipient : call.caller;
+    const otherUser = await Authing.getUserById(otherUserId);
+
+    if (call.status === "pending") {
+      if (isCaller) {
+        return {
+          msg: `You are ringing ${otherUser.username}.`,
+          status: "pending",
+          recipient: otherUser.username,
+        };
+      } else {
+        return {
+          msg: `${otherUser.username} is calling you.`,
+          status: "pending",
+          caller: otherUser.username,
+        };
+      }
+    }
+
+    return {
+      msg: `You are in an active call with ${otherUser.username}.`,
+      status: "active",
+      otherUser: otherUser.username,
+    };
+  }
+
+  // @Router.put("/calls/reject")
+  // async rejectCall(session: SessionDoc) {
+  //   const recipientId = Sessioning.getUser(session);
+  //   return await VideoCalling.rejectPendingCall(recipientId);
+  // }
+
+  @Router.put("/calls/accept")
+  async acceptCall(session: SessionDoc) {
+    const recipientId = Sessioning.getUser(session);
+    return await VideoCalling.acceptPendingCall(recipientId);
+  }
+
+  @Router.get("/messages/:friend")
+  async getMessagesBetweenUsers(session: SessionDoc, friend: string) {
     const user = Sessioning.getUser(session);
-    return await VideoCalling.endCall(new ObjectId(callId));
-  }
+    const friendUser = await Authing.getUserByUsername(friend);
 
-  @Router.get("/calls/:callId")
-  async getCallStatus(session: SessionDoc, callId: string) {
-    const user = Sessioning.getUser(session);
-    return await VideoCalling.getCallStatus(new ObjectId(callId));
-  }
+    if (!friendUser) {
+      throw new Error(`User with username ${friend} not found.`);
+    }
 
-  @Router.get("/messages/:recipientId")
-  async getMessagesBetweenUsers(session: SessionDoc, recipientId: string) {
-    const sender = Sessioning.getUser(session);
-    const messages = await Texting.getMessagesBetweenUsers(sender, new ObjectId(recipientId));
+    const userName = (await Authing.getUserById(user)).username;
+    const friendName = friendUser.username;
+
+    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
+    const messages = await Texting.getMessagesBetweenUsers(user, friendUser._id);
 
     return await Responses.messages(messages);
   }
 
-  @Router.post("/messages")
-  async sendMessage(session: SessionDoc, recipientId: string, content: string) {
+  @Router.post("/messages/:recipient")
+  async sendMessage(session: SessionDoc, recipient: string, content: string) {
     const sender = Sessioning.getUser(session);
-    const result = await Texting.sendMessage(sender, new ObjectId(recipientId), content);
+    const recipientUser = await Authing.getUserByUsername(recipient);
+
+    if (!recipientUser) {
+      throw new Error(`User with username ${recipient} not found.`);
+    }
+
+    const userName = (await Authing.getUserById(sender)).username;
+    const friendName = recipientUser.username;
+
+    await Friending.assertAreFriends(sender, recipientUser._id, userName, friendName);
+    const result = await Texting.sendMessage(sender, recipientUser._id, content);
 
     const { message } = result;
     return await Responses.message(message);
   }
-
 }
 
 /** The web app. */

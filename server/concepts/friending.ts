@@ -78,6 +78,20 @@ export default class FriendingConcept {
     return friendships.map((friendship) => (friendship.user1.toString() === user.toString() ? friendship.user2 : friendship.user1));
   }
 
+  // Ensure that users are friends before certain actions
+  async assertAreFriends(u1: ObjectId, u2: ObjectId, u1Name: string, u2Name: string) {
+    const friendship = await this.friends.readOne({
+      $or: [
+        { user1: u1, user2: u2 },
+        { user1: u2, user2: u1 },
+      ],
+    });
+
+    if (!friendship) {
+      throw new NotAllowedError(`${u1Name} and ${u2Name} are not friends!`);
+    }
+  }
+
   private async addFriend(user1: ObjectId, user2: ObjectId) {
     void this.friends.createOne({ user1, user2 });
   }
