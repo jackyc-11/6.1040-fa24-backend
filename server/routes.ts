@@ -154,53 +154,53 @@ class Routes {
   }
 
   @Router.post("/moods")
-  async setMood(session: SessionDoc, mood: string, friend: string) {
+  async setMood(session: SessionDoc, mood: string, recipient: string) {
     const user = Sessioning.getUser(session);
-    const friendUser = await Authing.getUserByUsername(friend);
+    const recipientUser = await Authing.getUserByUsername(recipient);
 
-    if (!friendUser) {
-      throw new Error(`User with username ${friend} not found.`);
+    if (!recipientUser) {
+      throw new Error(`User with username ${recipient} not found.`);
     }
 
     const userName = (await Authing.getUserById(user)).username;
-    const friendName = friendUser.username;
+    const recipientName = recipientUser.username;
 
-    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
-    return await MoodMapping.setMood(user, friendUser._id, mood);
+    await Friending.assertAreFriends(user, recipientUser._id, userName, recipientName);
+    return await MoodMapping.setMood(user, recipientUser._id, mood);
   }
 
-  @Router.get("/moods/:friend")
-  async getMood(session: SessionDoc, friend: string) {
+  @Router.get("/moods/:recipient")
+  async getMood(session: SessionDoc, recipient: string) {
     const user = Sessioning.getUser(session);
-    const friendUser = await Authing.getUserByUsername(friend);
+    const recipientUser = await Authing.getUserByUsername(recipient);
 
-    if (!friendUser) {
-      throw new Error(`User with username ${friend} not found.`);
+    if (!recipientUser) {
+      throw new Error(`User with username ${recipient} not found.`);
     }
 
     const userName = (await Authing.getUserById(user)).username;
-    const friendName = friendUser.username;
+    const recipientName = recipientUser.username;
 
-    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
+    await Friending.assertAreFriends(user, recipientUser._id, userName, recipientName);
 
-    const moods = await MoodMapping.getBothMoods(user, friendUser._id);
-    return `You: ${moods.yourMood || ""}    ${friendName}: ${moods.friendMood || ""}`;
+    const moods = await MoodMapping.getBothMoods(user, recipientUser._id);
+    return `You: ${moods.yourMood || ""}    ${recipientName}: ${moods.recipientMood || ""}`;
   }
 
   @Router.delete("/moods")
-  async removeMood(session: SessionDoc, friend: string) {
+  async removeMood(session: SessionDoc, recipient: string) {
     const user = Sessioning.getUser(session);
-    const friendUser = await Authing.getUserByUsername(friend);
+    const recipientUser = await Authing.getUserByUsername(recipient);
 
-    if (!friendUser) {
-      throw new Error(`User with username ${friend} not found.`);
+    if (!recipientUser) {
+      throw new Error(`User with username ${recipient} not found.`);
     }
 
     const userName = (await Authing.getUserById(user)).username;
-    const friendName = friendUser.username;
+    const recipientName = recipientUser.username;
 
-    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
-    return await MoodMapping.removeMood(user, friendUser._id);
+    await Friending.assertAreFriends(user, recipientUser._id, userName, recipientName);
+    return await MoodMapping.removeMood(user, recipientUser._id);
   }
 
   @Router.post("/calls")
@@ -290,20 +290,20 @@ class Routes {
     return await VideoCalling.acceptPendingCall(recipientId);
   }
 
-  @Router.get("/messages/:friend")
-  async getMessagesBetweenUsers(session: SessionDoc, friend: string) {
+  @Router.get("/messages/:recipient")
+  async getMessagesBetweenUsers(session: SessionDoc, recipient: string) {
     const user = Sessioning.getUser(session);
-    const friendUser = await Authing.getUserByUsername(friend);
+    const recipientUser = await Authing.getUserByUsername(recipient);
 
-    if (!friendUser) {
-      throw new Error(`User with username ${friend} not found.`);
+    if (!recipientUser) {
+      throw new Error(`User with username ${recipient} not found.`);
     }
 
     const userName = (await Authing.getUserById(user)).username;
-    const friendName = friendUser.username;
+    const recipientName = recipientUser.username;
 
-    await Friending.assertAreFriends(user, friendUser._id, userName, friendName);
-    const messages = await Texting.getMessagesBetweenUsers(user, friendUser._id);
+    await Friending.assertAreFriends(user, recipientUser._id, userName, recipientName);
+    const messages = await Texting.getMessagesBetweenUsers(user, recipientUser._id);
 
     return await Responses.messages(messages);
   }
@@ -318,9 +318,9 @@ class Routes {
     }
 
     const userName = (await Authing.getUserById(sender)).username;
-    const friendName = recipientUser.username;
+    const recipientName = recipientUser.username;
 
-    await Friending.assertAreFriends(sender, recipientUser._id, userName, friendName);
+    await Friending.assertAreFriends(sender, recipientUser._id, userName, recipientName);
     const result = await Texting.sendMessage(sender, recipientUser._id, content);
 
     const { message } = result;

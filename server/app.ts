@@ -13,5 +13,5 @@ export const Authing = new AuthenticatingConcept("users");
 export const Posting = new PostingConcept("posts");
 export const Friending = new FriendingConcept("friends");
 export const Texting = new TextingConcept("messages");
-export const MoodMapping = new MoodMappingConcept("mood");
+export const MoodMapping = new MoodMappingConcept("moods");
 export const VideoCalling = new VideoCallingConcept("videocalls");

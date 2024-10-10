@@ -88,9 +88,9 @@ const operations: Operation[] = [
   },
   {
     name: "Get Messages Between Users",
-    endpoint: "/api/messages/:friend",
+    endpoint: "/api/messages/:recipient",
     method: "GET",
-    fields: { friend: "input" },
+    fields: { recipient: "input" },
   },
   {
     name: "Get Friends",
@@ -160,21 +160,21 @@ const operations: Operation[] = [
   // },
   {
     name: "Get Mood",
-    endpoint: "/api/moods/:friend",
+    endpoint: "/api/moods/:recipient",
     method: "GET",
-    fields: { friend: "input" },
+    fields: { recipient: "input" },
   },
   {
     name: "Set Mood",
     endpoint: "/api/moods",
     method: "POST",
-    fields: { friend: "input", mood: "input" },
+    fields: { recipient: "input", mood: "input" },
   },
   {
     name: "Remove Mood",
     endpoint: "/api/moods",
     method: "DELETE",
-    fields: { friend: "input" },
+    fields: { recipient: "input" },
   },
   //
   // ...
